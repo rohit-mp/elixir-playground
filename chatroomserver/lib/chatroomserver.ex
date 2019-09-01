@@ -36,7 +36,7 @@ defmodule Chatroomserver do
     data = read_line(client)
     list = Agent.get(client_list, fn list -> list end)
     IO.inspect(list)
-    Enum.each(list, fn x -> :gen_tcp.send(x, data) end)
+    Enum.each(list, fn x -> if x != client, do: :gen_tcp.send(x, data) end)
     serve(client, client_list)
   end
 
