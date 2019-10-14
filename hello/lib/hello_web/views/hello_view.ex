@@ -1,3 +1,3 @@
 defmodule HelloWeb.HelloView do
-    use HelloWeb, :view
+  use HelloWeb, :view
 end

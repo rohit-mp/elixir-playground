@@ -1,0 +1,12 @@
+<textarea id="editor"><p>I am a paragraph.</p></textarea>
+<script>
+    var editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
+        mode: "python",
+        theme: "darcula",
+        lineNumbers: true,
+        autoCloseTags: true
+    });
+    // editor.setSize("250", "150");
+    var textInEditor = editor.getValue();
+    // console.log(textInEditor);
+</script>
