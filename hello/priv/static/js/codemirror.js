@@ -7258,8 +7258,8 @@
     if (ch == "\x08") { return }
     if (handleCharBinding(cm, e, ch)) { return }
     cm.display.input.onKeyPress(e);
-    console.log(cm + e + ch);
-    console.log(charCode); //added
+    // console.log(cm + e + ch);
+    // console.log(charCode); //added
   }
 
   var DOUBLECLICK_DELAY = 400;

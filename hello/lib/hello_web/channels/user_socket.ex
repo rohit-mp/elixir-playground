@@ -3,6 +3,7 @@ defmodule HelloWeb.UserSocket do
 
   ## Channels
   # channel "room:*", HelloWeb.RoomChannel
+  channel "room:lobby", HelloWeb.RoomChannel
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After
