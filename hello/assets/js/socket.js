@@ -8,7 +8,9 @@
 // from the params if you are not using authentication.
 import {Socket} from "phoenix"
 
-let socket = new Socket("/socket", {params: {token: window.userToken}})
+var rand = Math.floor(Math.random()*100)
+
+let socket = new Socket("/socket", {params: {token: window.userToken, user_id: rand}})
 
 // When you connect, you'll often need to authenticate the client.
 // For example, imagine you have an authentication plug, `MyAuth`,

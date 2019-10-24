@@ -10,3 +10,6 @@
     // var textInEditor = editor.getValue();
     // console.log(textInEditor);
 </script> %>
+<script>
+window.userID = "<%= assigns[:user_id] %>";
+</script>

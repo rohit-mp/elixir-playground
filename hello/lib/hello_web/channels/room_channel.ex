@@ -23,6 +23,7 @@ defmodule HelloWeb.RoomChannel do
   end
 
   def handle_in("updateCursor", payload, socket) do
+    payload = Map.put(payload, "user_id", socket.assigns.user_id)
     broadcast socket, "updateCursor", payload
     {:noreply, socket}
   end

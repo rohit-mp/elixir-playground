@@ -27,7 +27,7 @@ channel.on('shout', function (payload) {
 
 channel.on("updateCursor", function(payload) {
     console.log("received update");
-    console.log(payload.cursorPos);
+    console.log(payload);
     marker.clear();
     marker = cm.setBookmark(payload.cursorPos, { widget: cursorElement });
 })
@@ -69,6 +69,7 @@ cm.on("cursorActivity", (cm) => {
     var cursorPos = cm.getCursor();
     console.log(cursorPos);
     channel.push("updateCursor", {
-        cursorPos: cursorPos
+        cursorPos: cursorPos,
+        user_id: window.user_id
     });
 });

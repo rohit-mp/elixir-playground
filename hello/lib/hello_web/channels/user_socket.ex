@@ -17,11 +17,8 @@ defmodule HelloWeb.UserSocket do
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
   def connect(params, socket, connect_info) do
-    IO.inspect params
-    IO.inspect params["token"]
-    IO.inspect connect_info
-    {:ok, socket}
-    # {:ok, assign(socket, :user_id, params["user_id"])}
+    # {:ok, socket}
+    {:ok, assign(socket, :user_id, params["user_id"])}
   end
 
   # Socket id's are topics that allow you to identify all sockets for a given user:
@@ -34,9 +31,9 @@ defmodule HelloWeb.UserSocket do
   #     HelloWeb.Endpoint.broadcast("user_socket:#{user.id}", "disconnect", %{})
   #
   # Returning `nil` makes this socket anonymous.
-  def id(_socket), do: nil
-  # def id(socket) do
-  #     IO.inspect socket.assigns.user_id
-  #    "user_socket:#{socket.assigns.user_id}"
-  # end
+  # def id(_socket), do: nil
+  def id(socket) do
+      IO.inspect socket.assigns.user_id
+     "user_socket:#{socket.assigns.user_id}"
+  end
 end
