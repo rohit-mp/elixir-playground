@@ -18,7 +18,7 @@ defmodule HelloWeb.UserSocket do
   # performing token verification on connect.
   def connect(params, socket, connect_info) do
     # {:ok, socket}
-    {:ok, assign(socket, :user_id, params["user_id"])}
+    {:ok, assign(socket, :user_id, Enum.random(0..1024))}
   end
 
   # Socket id's are topics that allow you to identify all sockets for a given user:
