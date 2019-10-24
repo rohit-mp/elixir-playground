@@ -22,6 +22,11 @@ defmodule HelloWeb.RoomChannel do
     {:noreply, socket}
   end
 
+  def handle_in("updateCursor", payload, socket) do
+    broadcast socket, "updateCursor", payload
+    {:noreply, socket}
+  end
+
   # Add authorization logic here as required.
   defp authorized?(_payload) do
     true

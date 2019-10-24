@@ -1,5 +1,5 @@
 defmodule HelloWeb.UserSocket do
-  use Phoenix.Socket
+  use Phoenix.Socket, log: :debug
 
   ## Channels
   # channel "room:*", HelloWeb.RoomChannel
@@ -16,8 +16,12 @@ defmodule HelloWeb.UserSocket do
   #
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
-  def connect(_params, socket, _connect_info) do
+  def connect(params, socket, connect_info) do
+    IO.inspect params
+    IO.inspect params["token"]
+    IO.inspect connect_info
     {:ok, socket}
+    # {:ok, assign(socket, :user_id, params["user_id"])}
   end
 
   # Socket id's are topics that allow you to identify all sockets for a given user:
@@ -31,4 +35,8 @@ defmodule HelloWeb.UserSocket do
   #
   # Returning `nil` makes this socket anonymous.
   def id(_socket), do: nil
+  # def id(socket) do
+  #     IO.inspect socket.assigns.user_id
+  #    "user_socket:#{socket.assigns.user_id}"
+  # end
 end

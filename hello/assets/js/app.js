@@ -20,19 +20,42 @@ import Codemirror from "../../priv/static/js/codemirror"
 let channel = socket.channel("room:lobby", {});
 
 channel.on('shout', function (payload) {
-    myCodemirror.replaceRange(payload.changeObj.text, {line: payload.changeObj.from.line, ch: payload.changeObj.from.ch}, {line: payload.changeObj.to.line, ch: payload.changeObj.to.ch});
+    cm.replaceRange(payload.changeObj.text, {line: payload.changeObj.from.line, ch: payload.changeObj.from.ch}, {line: payload.changeObj.to.line, ch: payload.changeObj.to.ch});
+    // marker.clear();
+    // marker = cm.setBookmark(cm.getCursor(), { widget: cursorElement });
 });
+
+channel.on("updateCursor", function(payload) {
+    console.log("received update");
+    console.log(payload.cursorPos);
+    marker.clear();
+    marker = cm.setBookmark(payload.cursorPos, { widget: cursorElement });
+})
 
 channel.join()
 
-var myCodemirror = Codemirror.fromTextArea(document.getElementById("editor"), {
+var cm = Codemirror.fromTextArea(document.getElementById("editor"), {
     mode: "python",
     theme: "darcula",
     lineNumbers: true,
     autoCloseTags: true
 });
 
-myCodemirror.on("beforeChange", (myCodemirror, changeObj) => {
+    const cursorCoords = cm.cursorCoords(cm.getCursor());
+    const cursorElement = document.createElement('span');
+    cursorElement.style.borderLeftStyle = 'solid';
+    cursorElement.style.borderLeftWidth = '2px';
+    cursorElement.style.borderLeftColor = '#ff0000';
+    cursorElement.style.height = `${(cursorCoords.bottom - cursorCoords.top)}px`;
+    cursorElement.style.padding = 0;
+    cursorElement.style.zIndex = 0;
+    var marker = cm.setBookmark(cm.getCursor(), { widget: cursorElement });
+
+cm.on("beforeChange", (cm, changeObj) => {
+    console.log(cm.getCursor());
+    // console.log(socket.id);
+    // marker.clear();
+    
     console.log("before changing");
     if(changeObj.origin != undefined){
         changeObj.cancel();
@@ -41,3 +64,11 @@ myCodemirror.on("beforeChange", (myCodemirror, changeObj) => {
         });
     }
 })
+
+cm.on("cursorActivity", (cm) => {
+    var cursorPos = cm.getCursor();
+    console.log(cursorPos);
+    channel.push("updateCursor", {
+        cursorPos: cursorPos
+    });
+});
