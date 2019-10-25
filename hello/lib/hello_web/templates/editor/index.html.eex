@@ -1,4 +1,4 @@
-<textarea id="editor"><p>I am a paragraph.</p></textarea>
+<textarea id="editor"></textarea>
 <%# <script>
     var editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
         mode: "python",
@@ -10,6 +10,3 @@
     // var textInEditor = editor.getValue();
     // console.log(textInEditor);
 </script> %>
-<script>
-window.userID = "<%= assigns[:user_id] %>";
-</script>

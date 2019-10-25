@@ -26,13 +26,45 @@ channel.on('shout', function (payload) {
 });
 
 channel.on("updateCursor", function(payload) {
-    console.log("received update");
+    // console.log("received update");
     console.log(payload);
-    marker.clear();
-    marker = cm.setBookmark(payload.cursorPos, { widget: cursorElement });
+    // marker.clear();
+    // marker = cm.setBookmark(payload.cursorPos, { widget: cursorElement });
+    var cursor = document.createElement('span');
+    cursor.style.borderLeftStyle = 'solid';
+    cursor.style.borderLeftWidth = '2px';
+    cursor.style.height = `${(payload.cursorPos.bottom - payload.cursorPos.top)}px`;
+    cursor.style.padding = 0;
+    cursor.style.zIndex = 0;
+    cursor.style.borderLeftColor = '#' + payload.user_id.toString(16);
+    if(markers[payload.user_id] != undefined){
+        markers[payload.user_id].clear();
+    }
+    markers[payload.user_id] = cm.setBookmark(payload.cursorPos, {widget: cursor});
+})
+
+channel.on("createCursor", function(payload) {
+    // const cursorCoords = cm.cursorCoords(cm.getCursor());
+    const cursorCoords = {ch: 0, line:0};
+    var cursorElement = document.createElement('span');
+    cursorElement.style.borderLeftStyle = 'solid';
+    cursorElement.style.borderLeftWidth = '2px';
+    cursorElement.style.borderLeftColor = '#' + payload.user_id.toString(16);
+    // cursorElement.style.borderLeftColor = '0xff0000'
+    console.log('#' + payload.user_id.toString(16))
+    cursorElement.style.height = `${(cursorCoords.bottom - cursorCoords.top)}px`;
+    cursorElement.style.padding = 0;
+    cursorElement.style.zIndex = 0;
+    // myMarker = cm.setBookmark(cursorCoords, {widget: cursorElement});
+    markers[payload.user_id] = cm.setBookmark(cursorCoords, {widget: cursorElement});
+    // console.log("payload:")
+    // console.log(payload)
+    // console.log("myMarker:")
+    // console.log(myMarker);
 })
 
 channel.join()
+console.log(channel)
 
 var cm = Codemirror.fromTextArea(document.getElementById("editor"), {
     mode: "python",
@@ -41,22 +73,39 @@ var cm = Codemirror.fromTextArea(document.getElementById("editor"), {
     autoCloseTags: true
 });
 
-    const cursorCoords = cm.cursorCoords(cm.getCursor());
-    const cursorElement = document.createElement('span');
-    cursorElement.style.borderLeftStyle = 'solid';
-    cursorElement.style.borderLeftWidth = '2px';
-    cursorElement.style.borderLeftColor = '#ff0000';
-    cursorElement.style.height = `${(cursorCoords.bottom - cursorCoords.top)}px`;
-    cursorElement.style.padding = 0;
-    cursorElement.style.zIndex = 0;
-    var marker = cm.setBookmark(cm.getCursor(), { widget: cursorElement });
+    // const cursorCoords = cm.cursorCoords(cm.getCursor());
+    // const cursorElement = document.createElement('span');
+    // cursorElement.style.borderLeftStyle = 'solid';
+    // cursorElement.style.borderLeftWidth = '2px';
+    // cursorElement.style.borderLeftColor = '#ff0000';
+    // cursorElement.style.height = `${(cursorCoords.bottom - cursorCoords.top)}px`;
+    // cursorElement.style.padding = 0;
+    // cursorElement.style.zIndex = 0;
+    // var marker = cm.setBookmark(cm.getCursor(), { widget: cursorElement });
+
+    // const cursorCoords1 = cm.cursorCoords(cm.getCursor());
+    // const cursorElement1 = document.createElement('span');
+    // cursorElement1.style.borderLeftStyle = 'solid';
+    // cursorElement1.style.borderLeftWidth = '2px';
+    // cursorElement1.style.borderLeftColor = '#00ff00';
+    // cursorElement1.style.height = `${(cursorCoords.bottom - cursorCoords.top)}px`;
+    // cursorElement1.style.padding = 0;
+    // cursorElement1.style.zIndex = 0;
+    // var marker1 = cm.setBookmark(cm.getCursor(), { widget: cursorElement1 });
+
+var markers = {};
+// const my_user_id;
+channel.push("createCursor", {})
+console.log("my_id")
+const my_user_id = (channel.push("get_my_id", {})) //.receivedResp.response.user_id
+console.log(my_user_id)
 
 cm.on("beforeChange", (cm, changeObj) => {
-    console.log(cm.getCursor());
-    // console.log(socket.id);
+    // console.log(cm.getCursor());
+    // console.log(socket.id); 
     // marker.clear();
     
-    console.log("before changing");
+    // console.log("before changing");
     if(changeObj.origin != undefined){
         changeObj.cancel();
         channel.push('shout', {
@@ -68,8 +117,10 @@ cm.on("beforeChange", (cm, changeObj) => {
 cm.on("cursorActivity", (cm) => {
     var cursorPos = cm.getCursor();
     console.log(cursorPos);
+    // console.log(window.user_id)
+    // console.log(marker);
+    // console.log(marker.find());
     channel.push("updateCursor", {
         cursorPos: cursorPos,
-        user_id: window.user_id
     });
 });
