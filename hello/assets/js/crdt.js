@@ -180,10 +180,10 @@ class CRDT {
     localInsert(ch, lineNumber, pos, siteID) {
 
         pos = pos + 1;
-        if(ch == '') {
-            this.data.push([]);
-            return new Character('', [[]]);
-        }
+        // if(ch == '') {
+        //     this.data.push([]);
+        //     return new Character('', [[]]);
+        // }
 
         var len = this.data[lineNumber].length;
 
@@ -282,7 +282,20 @@ class CRDT {
     }
 
     localInsertNewline(lineNumber, pos) {
-
+        pos = pos + 1;
+        var retCharacter = this.data[lineNumber][pos];
+        var insertCharacter = new Character('', createIdentifierList([[0, -1]]));
+        var insertCharacter1 = new Character('', createIdentifierList([[1, Infinity]]));
+        // var tempLine = this.data[lineNumber];
+        let tempLine = JSON.parse(JSON.stringify(this.data[lineNumber]));
+        console.log(this.toString())
+        let temp = (tempLine.slice(0, pos)).push(insertCharacter1);
+        console.log(temp)
+        this.data[lineNumber] = (tempLine.slice(0, pos)).push(insertCharacter1);
+        console.log(this.toString());
+        this.data.splice(lineNumber+1, 0, tempLine.slice(pos+1).unshift(insertCharacter));
+        console.log(this.toString());
+        return retCharacter;
     }
 
     /**
@@ -306,7 +319,7 @@ class CRDT {
      * @result {string}
      */
     remoteInsert(character, lineNumber) { //Binary search insertion [pointless since splice will be O(n)]
-        var cchar = new Character(character.ch, parseIdentifiers(character.identifiers))
+        var cchar = new Character(character.ch, parseIdentifiers(character.identifiers));
         var characters = this.data[lineNumber];
         var pos;
         for(pos = 0; pos < characters.length; pos++) {
@@ -317,6 +330,21 @@ class CRDT {
         this.data[lineNumber].splice(pos, 0, cchar);
     }
     
+    remoteInsertNewline(character, lineNumber) {
+        var cchar = new Character(character.ch, parseIdentifiers(character.identifiers));
+        var characters = this.data[lineNumber];
+        var pos;
+        for(pos=0; pos<characters.length; pos++) {
+            var c = characters[pos];
+            if(!cchar.isGreaterThan(c)) break;
+        }
+        var insertCharacter = new Character('', createIdentifierList([0, -1]));
+        var insertCharacter1 = new Character('', createIdentifierList([[1, Infinity]]));
+        var tempLine = this.data[lineNumber];
+        this.data[lineNumber] = tempLine.slice(0, pos).push(insertCharacter1);
+        this.data.splice(lineNumber+1, 0, tempLine.slice(pos+1).unshift(insertCharacter));
+    }
+
     /**
      * Deletions directly to CRDT
      * Returns editor compliat line
