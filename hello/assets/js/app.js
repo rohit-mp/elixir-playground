@@ -153,17 +153,27 @@ cm.on("beforeChange", (cm, changeObj) => {
                 type: "input",
                 character: insertCharacter,
                 lineNumber: changeObj.from.line
-            })
+            })  
         }
         else if(changeObj.origin == "+delete") {
-            var tempCharacter = crdt.localDelete(changeObj.from.line, changeObj.from.ch)
-            // console.log(tempCharacter)
-            console.log(crdt.toString())
-            channel.push("shout", {
-                type: "delete",
-                character: tempCharacter,
-                lineNumber: changeObj.from.line
-            })
+            for(var i=changeObj.from.line; i<=changeObj.to.line; i++) {
+                for(var j=changeObj.from.ch; j<changeObj.to.ch; j++) {
+                    var tempCharacter = crdt.localDelete(i, j)
+                    channel.push("shout", {
+                        type: "delete",
+                        character: tempCharacter,
+                        lineNumber: i
+                    })
+                }
+            }
+            // var tempCharacter = crdt.localDelete(changeObj.from.line, changeObj.from.ch)
+            // // console.log(tempCharacter)
+            // console.log(crdt.toString())
+            // channel.push("shout", {
+            //     type: "delete",
+            //     character: tempCharacter,
+            //     lineNumber: changeObj.from.line
+            // })
         }
         else {
             console.log(changeObj.origin + " not handled yet")
