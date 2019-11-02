@@ -1,8 +1,8 @@
-//TODO: CRDT and queue of jobs
+// TODO: CRDT and queue of jobs
 
-//Assuming single character insertion and deletion (TODO: Multichar)
-//Ignored Enter
-//No undo feture
+// Assuming single character insertion and deletion (TODO: Multichar)
+// Ignored Enter
+// No undo feture
 
 /**
  * API:
@@ -17,8 +17,8 @@
 class Identifier {
     /**
      * An `Identifier` identifies the position of a `ch` in a `character`
-     * @param  {Number} position
-     * @param  {Number} siteID
+     * @param  {} position
+     * @param  {} siteID
      */
     constructor(position, siteID) {
         this.position = position;
@@ -45,15 +45,6 @@ class Identifier {
         if(this.position < identifier.position) return false;
         return this.siteID > identifier.siteID;
     }
-
-    /**
-     * If `this` < `identifier`
-     * Based on position, ties broken by siteID
-     * @param  {Identifier} identifier
-     */
-    isLesserThan(identifier) {
-        return (!this.isEqualTo(identifier) && !this.isGreaterThan(identifier));;
-    }
 }
 
 /**
@@ -68,7 +59,6 @@ function createIdentifierList(list = []) {
     return identifierList;
 }
 
-//NOTE: Element would be a better name
 class Character {
     /**
      * Each `Character` of CRDT data structure
@@ -81,7 +71,7 @@ class Character {
     }
     
     /**
-     * If `this` == `character`
+     * If `this` and `character` are same
      * @param  {Character} character
      * @param  {Boolean}   site
      */
@@ -115,14 +105,6 @@ class Character {
         if(this.identifiers.length > character.identifiers.length) return true;
         else return false;
     }
-
-    /**
-     * Pushes `identifier` to `this.identifiers`
-     * @param  {Identifer} identifier
-     */
-    pushIdentifier(identifier) {
-        this.identifiers.push(identifier);
-    }
 }
 
 class CRDT {
@@ -133,112 +115,22 @@ class CRDT {
     constructor(data = [[]]) {
         this.data = data;
     }
+    
+    // getReadablePosition(character) {
+    //     var readablePosition = 0;
+    //     for(var i = 0; i <  character.identifiers.length; i++) {
+    //         readablePosition += character.identifiers[i].position * Math.pow(0.1, i+1);
+    //     }
+    //     return readablePosition;
+    // }
 
-    /**
-     * Insert `ch` at line `lineNumber` and position `pos` by `siteID`
-     * Enters at `pos`, characters after `pos` are shifted ahead
-     * @param  {Char}   ch
-     * @param  {Number} lineNumber
-     * @param  {Number} pos
-     * @param  {Number} siteID
-     * @result {Character}
-     */
-    localInsert(ch, lineNumber, pos, siteID) {
-        var len = this.data[lineNumber].length;
-
-        //Find prev and next Identifiers (assuming imaginary first and last characters)
-        var prevIdentifierList = ((pos != 0) ? this.data[lineNumber][pos-1].identifiers : createIdentifierList([[0, -1]]));
-        var nextIdentifierList = ((pos != len) ? this.data[lineNumber][pos].identifiers : createIdentifierList([[1, Infinity]]));
-        
-        var maxLen = Math.max(prevIdentifierList.length, nextIdentifierList.length);
-        var insertCharacter = new Character(ch, []);
-        
-        //Keep track of siteID before current Identifier
-        var lastPrevSiteID = -1;
-        var lastNextSiteID = Infinity;
-
-        //Keeps track if the identifierList is found
-        var identifierListFound = false;
-        //Keeps track if next greater identifier of prev identifier is being found out
-        var findNextGreaterIdentifier = false;
-
-        //Iterate over prev and next Identifier and get IdentifierList of `insertCharacter`
-        for(let i = 0; i < maxLen; i++) {
-            //TODO: Check this
-            var prevIdentifier = ((i < prevIdentifierList.length) ? prevIdentifier[i] : new Identifier(0, lastPrevSiteID));
-            var nextIdentifier = ((i < nextIdentifierList.length) ? nextIdentifier[i] : new Identifier(0, lastNextSiteID));
-            
-            if(!findNextGreaterIdentifier) {
-                if(prevIdentifier.position < nextIdentifier.position) {
-                    //Being greedy on size of identifier list
-                    if(siteID > prevIdentifier.siteID) { //TODO: check if ch is same? idempotency?
-                        //If by siteID alone identifier order can be obtained, then push and done!
-                        insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, siteID));
-                        identifierListFound = true;
-                    }
-                    else if(prevIdentifier.positon + 1 < nextIdentifier.position) {
-                        //If there is atleast a gap of 2 between prevIdentifier and nextIdentifier, take
-                        //prevIdentifier.position+1 and done!
-                        insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position+1, siteID));
-                        identifierListFound = true;
-                    }
-                    else { //prevIdentifier.position + 1 == nextIdentifier.position
-                        //IdentifierList lesser than nextIndetifierList is found;
-                        //Next find IdentifierList greater than prevIdentifier
-                        insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, prevIdentifier.siteID));
-                        findNextGreaterIdentifier = true;
-                    }
-                }
-                else { //prevIdentifier.position == nextIdentifer.position
-                    //NOTE: prevIdentifier.siteID < nextIdentifier.siteID
-                    if(prevIdentifier.siteID < siteID && siteID < nextIdentifier.siteID) {
-                        //By siteID alone order can be obtained, then push and done!
-                        insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, siteID));
-                        identifierListFound = true;
-                    }
-                    else {
-                        //Positions are same and siteIDs don't help in ordering. Have to go ahead
-                        insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, prevIdentifier.siteID));
-                    }
-                }
-            }
-            else {
-                //IdentifierList is already less then nextIdentifierList;
-                //This section finds IdentifierList greater than prevIdentifierList
-                if(siteID > prevIdentifier.siteID) {
-                    //By siteId alone order can be obtained, then push and done!
-                    insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, siteID));
-                    identifierListFound = true;
-                }
-                else if(prevIdentifier.position < 9) {
-                    //If prevIdentifier.position is not 9, then can always add 1 to position, push and done!
-                    insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position+1, siteID));
-                    identifierListFound = true;
-                }
-                else { //prevIdentifier.position == 9
-                    //If prevIdentifier.position is 9, then have to go ahead
-                    insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, prevIdentifier.siteID));
-                }
-            }
-
-            lastPrevSiteID = prevIdentifier.siteID;
-            lastNextSiteID = nextIdentifier.siteID;
-
-            if(identifierListFound) break;
-        }
-
-        if(!identifierListFound) {
-            insertCharacter.pushIdentifier(new Identifier(1, siteID));
-            identifierListFound = true;
-        }
-
-        //insert new Character to CRDT and return it
-        this.data[lineNumber].splice(pos, 0, insertCharacter);
-        return insertCharacter;
+    localInsert(ch, lineNumber, pos) {
+        var prevIdentifierList = data.lineNumber[pos-1].identifiers;
+        var nextIdentifierList = data.lineNumber[pos].identifiers;
     }
 
     /**
-     * Delete `character` at line `lineNumber` and position `pos`
+     * Delete `ch` at line `lineNumber` and position `pos`
      * @param  {Number} lineNumber
      * @param  {Number} pos
      * @result {Character}
