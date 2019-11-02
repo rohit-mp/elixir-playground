@@ -135,6 +135,18 @@ cm.on("beforeChange", (cm, changeObj) => {
         // changeObj.cancel();
         console.log(changeObj)
         if(changeObj.origin == "+input") {
+            if(changeObj.from.line != changeObj.to.line || changeObj.from.ch != changeObj.to.ch) { //select and insert
+                for(var i=changeObj.from.line; i<=changeObj.to.line; i++) {
+                    for(var j=changeObj.from.ch; j<changeObj.to.ch; j++) {
+                        var tempCharacter = crdt.localDelete(i, j)
+                        channel.push("shout", {
+                            type: "delete",
+                            character: tempCharacter,
+                            lineNumber: i
+                        })
+                    }
+                }
+            }
             var insertCharacter = crdt.localInsert(changeObj.text[0], changeObj.from.line, changeObj.from.ch, my_id)
             console.log(crdt.toString())
             channel.push("shout", {
