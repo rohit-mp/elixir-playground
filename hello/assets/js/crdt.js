@@ -54,6 +54,10 @@ class Identifier {
     isLesserThan(identifier) {
         return (!this.isEqualTo(identifier) && !this.isGreaterThan(identifier));;
     }
+
+    toString() {
+        return `[${this.position}, ${this.siteID}]`;
+    }
 }
 
 /**
@@ -123,6 +127,17 @@ class Character {
     pushIdentifier(identifier) {
         this.identifiers.push(identifier);
     }
+
+    toString() {
+        var output = `{${this.ch}: [`;
+        for(let i = 0; i < this.identifiers.length; i++) {
+            output += this.identifiers[i].toString();
+            if(i < this.identifiers.length-1)
+                output += ', ';
+        }
+        output += ']}';
+        return output;
+    }
 }
 
 class CRDT {
@@ -165,14 +180,15 @@ class CRDT {
         //Iterate over prev and next Identifier and get IdentifierList of `insertCharacter`
         for(let i = 0; i < maxLen; i++) {
             //TODO: Check this
-            var prevIdentifier = ((i < prevIdentifierList.length) ? prevIdentifier[i] : new Identifier(0, lastPrevSiteID));
-            var nextIdentifier = ((i < nextIdentifierList.length) ? nextIdentifier[i] : new Identifier(0, lastNextSiteID));
+            var prevIdentifier = ((i < prevIdentifierList.length) ? prevIdentifierList[i] : new Identifier(0, lastPrevSiteID));
+            var nextIdentifier = ((i < nextIdentifierList.length) ? nextIdentifierList[i] : new Identifier(0, lastNextSiteID));
             
             if(!findNextGreaterIdentifier) {
                 if(prevIdentifier.position < nextIdentifier.position) {
                     //Being greedy on size of identifier list
-                    if(siteID > prevIdentifier.siteID) { //TODO: check if ch is same? idempotency?
+                    if(siteID > prevIdentifier.siteID && prevIdentifier.siteID != -1) { //TODO: check if ch is same? idempotency?
                         //If by siteID alone identifier order can be obtained, then push and done!
+                        //Edge case of first character inserted in line handled by 2nd condition
                         insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, siteID));
                         identifierListFound = true;
                     }
@@ -299,8 +315,28 @@ class CRDT {
         }
         return lineString;
     }
+
+    /**
+     * Get string representation of `this`.
+     * Useful for debugging.
+     */
+    toString() {
+        var output = "";
+        for(let i = 0; i < this.data.length; i++) {
+            for(let j = 0; j < this.data[i].length; j++) {
+                var character = this.data[i][j];
+                output += character.toString();
+                if(j < this.data[i].length-1)
+                    output += ", "
+            }
+            output += "\n"
+        }
+        return output;
+    }
 }
 
-var testCharacter = new Character('a', createIdentifierList([[1,1], [5,2]]));
-var testCharacter1 = new Character('a', createIdentifierList([[1,1], [5,3]]));
-console.log(testCharacter.isGreaterThan(testCharacter1));
+// var testCharacter = new Character('a', createIdentifierList([[1,1], [5,2]]));
+// var testCharacter1 = new Character('a', createIdentifierList([[1,1], [5,3]]));
+// console.log(testCharacter.isGreaterThan(testCharacter1));
+
+var crdt = new CRDT();
