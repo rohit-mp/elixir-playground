@@ -16,22 +16,36 @@ import "phoenix_html"
 // Local files can be imported directly using relative paths, for example:
 import socket from "./socket"
 import Codemirror from "../../priv/static/js/codemirror"
+import crdt from "./crdt"
+var CRDT = require('./crdt')
 
 let channel = socket.channel("room:lobby", {});
 
 channel.on('shout', function (payload) {
-    console.log(payload.user_id, my_id)
-    if(payload.user_id != my_id){
-        cm.replaceRange(payload.changeObj.text, {line: payload.changeObj.from.line, ch: payload.changeObj.from.ch}, {line: payload.changeObj.to.line, ch: payload.changeObj.to.ch});
+    // if(payload.user_id != my_id){
+    //     cm.replaceRange(payload.changeObj.text, {line: payload.changeObj.from.line, ch: payload.changeObj.from.ch}, {line: payload.changeObj.to.line, ch: payload.changeObj.to.ch});
+    // }
+    if(payload.user_id != my_id) {
+        console.log(payload)
+        if(payload.type == "input") {
+            crdt.remoteInsert(payload.character, payload.lineNumber)
+            cm.replaceRange(crdt.getUpdatedLine(payload.lineNumber), {line: payload.lineNumber, ch:0}, {line: payload.lineNumber})
+        }
+        else if(payload.type == "delete") {
+            crdt.remoteDelete(payload.character, payload.lineNumber)
+            cm.replaceRange(crdt.getUpdatedLine(payload.lineNumber), {line: payload.lineNumber, ch:0}, {line: payload.lineNumber})
+        }
+        else {
+            console.log(payload.type, " not handled yet")
+        }
+        console.log(crdt.toString())
     }
-    // marker.clear();
-    // marker = cm.setBookmark(cm.getCursor(), { widget: cursorElement });
 });
 
 channel.on("updateCursor", function(payload) {
     if(my_id != payload.user_id){
         // console.log("received update");
-        console.log(payload);
+        // console.log(payload);
         // marker.clear();
         // marker = cm.setBookmark(payload.cursorPos, { widget: cursorElement });
         var cursor = document.createElement('span');
@@ -71,7 +85,7 @@ channel.on("createCursor", function(payload) {
 })
 
 channel.join()
-console.log(channel)
+// console.log(channel)
 
 var cm = Codemirror.fromTextArea(document.getElementById("editor"), {
     mode: "python",
@@ -108,7 +122,7 @@ channel.push("get_my_id", {}).receive(
     "ok", (reply) => my_id = reply.user_id
 )
 channel.push("createCursor", {})
-
+// var crdt = CRDT.CRDT()
 
 
 cm.on("beforeChange", (cm, changeObj) => {
@@ -119,15 +133,43 @@ cm.on("beforeChange", (cm, changeObj) => {
     // console.log("before changing");
     if(changeObj.origin != undefined){
         // changeObj.cancel();
-        channel.push('shout', {
-            changeObj: changeObj
-        });
+        console.log(changeObj)
+        if(changeObj.origin == "+input") {
+            var insertCharacter = crdt.localInsert(changeObj.text[0], changeObj.from.line, changeObj.from.ch, my_id)
+            console.log(crdt.toString())
+            channel.push("shout", {
+                type: "input",
+                character: insertCharacter,
+                lineNumber: changeObj.from.line
+            })
+        }
+        else if(changeObj.origin == "+delete") {
+            var tempCharacter = crdt.localDelete(changeObj.from.line, changeObj.from.ch)
+            // console.log(tempCharacter)
+            console.log(crdt.toString())
+            channel.push("shout", {
+                type: "delete",
+                character: tempCharacter,
+                lineNumber: changeObj.from.line
+            })
+        }
+        else {
+            console.log(changeObj.origin + " not handled yet")
+        }
+        // channel.push('shout', {
+        //     changeObj: changeObj
+        // });
     }
+    /*
+    type: "default"/"insert"/"delete"/"newline"
+    character: tempCharacter/insertCharacter
+    lineNumber: lineNumber
+    */
 })
 
 cm.on("cursorActivity", (cm) => {
     var cursorPos = cm.getCursor();
-    console.log(cursorPos);
+    // console.log(cursorPos);
     // console.log(window.user_id)
     // console.log(marker);
     // console.log(marker.find());

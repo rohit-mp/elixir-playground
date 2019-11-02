@@ -1,3 +1,5 @@
+import { create } from "domain";
+
 //TODO: CRDT and queue of jobs
 
 //Assuming single character insertion and deletion (TODO: Multichar)
@@ -68,6 +70,14 @@ function createIdentifierList(list = []) {
     var identifierList = []
     for(let l of list) {
         identifierList.push(new Identifier(l[0], l[1]));
+    }
+    return identifierList;
+}
+
+function parseIdentifiers(list = []) {
+    var identifierList = []
+    for(let l of list) {
+        identifierList.push(new Identifier(l.position, l.siteID))
     }
     return identifierList;
 }
@@ -145,8 +155,17 @@ class CRDT {
      * Conflict-Free Replicated Data Type on each client side
      * @param  {List{Character}} data=[]
      */
-    constructor(data = [[]]) {
+    constructor(data = [
+            [new Character('', createIdentifierList([[0, -1]])), new Character('', createIdentifierList([[1, Infinity]]))]
+        ]) {
         this.data = data;
+        // this.data[0].push(new Character('', createIdentifierList([0, -1])));
+        // this.data[0].push(new Character('', createIdentifierList([1, Infinity])));
+        console.log(this.data)
+        // for(let i = 0; i < data.length; i++) {
+        //     this.data.push([]);
+        //     this.data[i].push(new Character('', createIdentifierList([0, -1], [1, Infinity])))  
+        // }
     }
 
     /**
@@ -159,11 +178,20 @@ class CRDT {
      * @result {Character}
      */
     localInsert(ch, lineNumber, pos, siteID) {
+
+        pos = pos + 1;
+        if(ch == '') {
+            this.data.push([]);
+            return new Character('', [[]]);
+        }
+
         var len = this.data[lineNumber].length;
 
         //Find prev and next Identifiers (assuming imaginary first and last characters)
-        var prevIdentifierList = ((pos != 0) ? this.data[lineNumber][pos-1].identifiers : createIdentifierList([[0, -1]]));
-        var nextIdentifierList = ((pos != len) ? this.data[lineNumber][pos].identifiers : createIdentifierList([[1, Infinity]]));
+        // var prevIdentifierList = ((pos != 0) ? this.data[lineNumber][pos-1].identifiers : createIdentifierList([[0, -1]]));
+        var prevIdentifierList = this.data[lineNumber][pos-1].identifiers;
+        // var nextIdentifierList = ((pos != len) ? this.data[lineNumber][pos].identifiers : createIdentifierList([[1, Infinity]]));
+        var nextIdentifierList = this.data[lineNumber][pos].identifiers;
         
         var maxLen = Math.max(prevIdentifierList.length, nextIdentifierList.length);
         var insertCharacter = new Character(ch, []);
@@ -253,6 +281,10 @@ class CRDT {
         return insertCharacter;
     }
 
+    localInsertNewline(lineNumber, pos) {
+
+    }
+
     /**
      * Delete `character` at line `lineNumber` and position `pos`
      * @param  {Number} lineNumber
@@ -260,8 +292,9 @@ class CRDT {
      * @result {Character}
      */
     localDelete(lineNumber, pos) {
+        pos = pos + 1;
         var tempCharacter = this.data[lineNumber][pos];
-        this.data[lineNumber].splice(pos, 0);
+        this.data[lineNumber].splice(pos, 1);
         return tempCharacter;
     }
 
@@ -273,15 +306,15 @@ class CRDT {
      * @result {string}
      */
     remoteInsert(character, lineNumber) { //Binary search insertion [pointless since splice will be O(n)]
+        var cchar = new Character(character.ch, parseIdentifiers(character.identifiers))
         var characters = this.data[lineNumber];
         var pos;
-        for(pos = 0; pos < characters.length(); pos++) {
+        for(pos = 0; pos < characters.length; pos++) {
             var c = characters[pos];
-            if(character.isGreaterThan(c)) continue; //character == c doesn't make sense since it's like duplicate simultaneous insertion by the same user
+            if(!cchar.isGreaterThan(c)) break;
+            // if(character.isGreaterThan(c)) continue; //character == c doesn't make sense since it's like duplicate simultaneous insertion by the same user
         }
-        this.data[lineNumber].splice(pos, 0, character);
-
-        return this.getUpdatedLine(lineNumber);
+        this.data[lineNumber].splice(pos, 0, cchar);
     }
     
     /**
@@ -292,14 +325,14 @@ class CRDT {
      * @result {string}
      */
     remoteDelete(character, lineNumber) {
-        for(let pos = 0; pos < data[lineNumber].length; pos++) {
-            var c = data[lineNumber][pos];
-            if(c.isEqualTo(character)) {
-                data[lineNumber].splice(pos, 1);
+        var cchar = new Character(character.ch, parseIdentifiers(character.identifiers))
+        for(let pos = 0; pos < this.data[lineNumber].length; pos++) {
+            var c = this.data[lineNumber][pos];
+            // if(c.isEqualTo(character)) {
+            if(c.isEqualTo(cchar)) {
+                this.data[lineNumber].splice(pos, 1);
             } 
         }
-
-        return this.getUpdatedLine(lineNumber);
     }
 
     
@@ -327,7 +360,7 @@ class CRDT {
                 var character = this.data[i][j];
                 output += character.toString();
                 if(j < this.data[i].length-1)
-                    output += ", "
+                    output += ", "  
             }
             output += "\n"
         }
@@ -340,3 +373,5 @@ class CRDT {
 // console.log(testCharacter.isGreaterThan(testCharacter1));
 
 var crdt = new CRDT();
+
+export default crdt
