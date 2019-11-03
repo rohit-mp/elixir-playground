@@ -37,10 +37,11 @@ channel.on('shout', function (payload) {
         }
         else if(payload.type == "newline") {
             crdt.remoteInsertNewline(payload.character, payload.lineNumber)
-            for(var line=payload.lineNumber; line<crdt.data.length; line++) {
-                cm.replaceRange(crdt.getUpdatedLine(line), {line: line, ch:0}, {line:line})
-            } 
-            console.log(crdt.toString())
+            //Updates `payload.lineNumber` and inserts new line
+            cm.replaceRange([crdt.getUpdatedLine(payload.lineNumber), ""], {line: payload.lineNumber, ch:0}, {line: payload.lineNumber})
+            //Updates lines below `payload.lineNumber`
+            for(var line = payload.lineNumber+1; line < crdt.data.length; line++)
+                cm.replaceRange(crdt.getUpdatedLine(line), {line: line, ch:0}, {line: line})
         }
         else {
             console.log(payload.type, " not handled yet")
