@@ -177,16 +177,21 @@ cm.on("beforeChange", (cm, changeObj) => {
         }
         else if(changeObj.origin == "+delete") {
             for(var i=changeObj.from.line; i<=changeObj.to.line; i++) {
-                for(var j = (i==changeObj.from.line?changeObj.from.ch:0); j < (i==changeObj.to.line?changeObj.to.ch:crdt.data[i].length-1); j++) {
+                var begin = i==changeObj.from.line?changeObj.from.ch:1
+                var end = i==changeObj.to.line?changeObj.to.ch:crdt.data[i].length-1
+                for(var j = begin; j < end; j++) {
                     console.log('deleting at', i, j)
                     console.log(crdt.toString())
-                    var tempCharacter = crdt.localDelete(i, changeObj.from.ch)
+                    var tempCharacter = crdt.localDelete(i, j)
                     console.log('deleted', tempCharacter)
                     channel.push("shout", {
                         type: "delete",
                         character: tempCharacter,
                         lineNumber: i
                     })
+                }
+                if(i != changeObj.to.line) {
+                    //crdt.localDeleteNewline(i); 
                 }
             }   
             // var tempCharacter = crdt.localDelete(changeObj.from.line, changeObj.from.ch)
