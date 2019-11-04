@@ -141,7 +141,7 @@ cm.on("beforeChange", (cm, changeObj) => {
     // console.log("before changing");
     if(changeObj.origin != undefined){
         // changeObj.cancel();
-        console.log(changeObj)
+        // console.log(changeObj)
         if(changeObj.origin == "+input") {
             if(changeObj.from.line != changeObj.to.line || changeObj.from.ch != changeObj.to.ch) { //select and insert
                 for(var i=changeObj.from.line; i<=changeObj.to.line; i++) {
@@ -176,14 +176,14 @@ cm.on("beforeChange", (cm, changeObj) => {
             }
         }
         else if(changeObj.origin == "+delete") {
-            for(var i=changeObj.from.line; i<=changeObj.to.line; i++) {
-                var begin = i==changeObj.from.line?changeObj.from.ch:1
-                var end = i==changeObj.to.line?changeObj.to.ch:crdt.data[i].length-1
-                for(var j = begin; j < end; j++) {
+            for(var i=changeObj.to.line; i>=changeObj.from.line; i--) {
+                var begin = ((i==changeObj.from.line) ? (changeObj.from.ch) : 0)
+                var end = ((i==changeObj.to.line) ? (changeObj.to.ch) : (crdt.data[i].length-2))
+                for(var j = end-1; j >= begin; j--) {
                     console.log('deleting at', i, j)
-                    console.log(crdt.toString())
+                    // console.log(crdt.toString())
                     var tempCharacter = crdt.localDelete(i, j)
-                    console.log('deleted', tempCharacter)
+                    // console.log('deleted', tempCharacter)
                     channel.push("shout", {
                         type: "delete",
                         character: tempCharacter,
@@ -191,7 +191,8 @@ cm.on("beforeChange", (cm, changeObj) => {
                     })
                 }
                 if(i != changeObj.to.line) {
-                    //crdt.localDeleteNewline(i); 
+                    console.log(`deleting newline of ${i}`)
+                    crdt.localDeleteNewline(i); 
                 }
             }   
             // var tempCharacter = crdt.localDelete(changeObj.from.line, changeObj.from.ch)
@@ -210,6 +211,7 @@ cm.on("beforeChange", (cm, changeObj) => {
         //     changeObj: changeObj
         // });
     }
+    console.log(crdt.toString());
     /*
     type: "default"/"insert"/"delete"/"newline"
     character: tempCharacter/insertCharacter
