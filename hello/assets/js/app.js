@@ -177,8 +177,11 @@ cm.on("beforeChange", (cm, changeObj) => {
         }
         else if(changeObj.origin == "+delete") {
             for(var i=changeObj.from.line; i<=changeObj.to.line; i++) {
-                for(var j=changeObj.from.ch; j<changeObj.to.ch; j++) {
-                    var tempCharacter = crdt.localDelete(i, j)
+                for(var j = (i==changeObj.from.line?changeObj.from.ch:0); j < (i==changeObj.to.line?changeObj.to.ch:crdt.data[i].length-1); j++) {
+                    console.log('deleting at', i, j)
+                    console.log(crdt.toString())
+                    var tempCharacter = crdt.localDelete(i, changeObj.from.ch)
+                    console.log('deleted', tempCharacter)
                     channel.push("shout", {
                         type: "delete",
                         character: tempCharacter,
