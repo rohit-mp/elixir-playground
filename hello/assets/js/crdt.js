@@ -284,17 +284,14 @@ class CRDT {
     localInsertNewline(lineNumber, pos) {
         pos = pos + 1;
         var retCharacter = this.data[lineNumber][pos];
-        var insertCharacter = new Character('', createIdentifierList([[0, -1]]));
-        var insertCharacter1 = new Character('', createIdentifierList([[1, Infinity]]));
-        // var tempLine = this.data[lineNumber];
-        let tempLine = JSON.parse(JSON.stringify(this.data[lineNumber]));
-        console.log(this.toString())
-        let temp = (tempLine.slice(0, pos)).push(insertCharacter1);
-        console.log(temp)
-        this.data[lineNumber] = (tempLine.slice(0, pos)).push(insertCharacter1);
-        console.log(this.toString());
-        this.data.splice(lineNumber+1, 0, tempLine.slice(pos+1).unshift(insertCharacter));
-        console.log(this.toString());
+        var beginCharacter = new Character('', createIdentifierList([[0, -1]]));
+        var endCharacter = new Character('', createIdentifierList([[1, Infinity]]));
+        
+        //Inserts a new line at lineNumber+1, `splices` out characters after `pos`
+        //in this.data[lineNumber] to this.data[lineNumber+1] (splice returns the removed part)
+        this.data.splice(lineNumber+1, 0, this.data[lineNumber].splice(pos));
+        this.data[lineNumber].push(endCharacter);
+        this.data[lineNumber+1].unshift(beginCharacter);
         return retCharacter;
     }
 
@@ -338,11 +335,11 @@ class CRDT {
             var c = characters[pos];
             if(!cchar.isGreaterThan(c)) break;
         }
-        var insertCharacter = new Character('', createIdentifierList([0, -1]));
-        var insertCharacter1 = new Character('', createIdentifierList([[1, Infinity]]));
-        var tempLine = this.data[lineNumber];
-        this.data[lineNumber] = tempLine.slice(0, pos).push(insertCharacter1);
-        this.data.splice(lineNumber+1, 0, tempLine.slice(pos+1).unshift(insertCharacter));
+        var beginCharacter = new Character('', createIdentifierList([[0, -1]]));
+        var endCharacter = new Character('', createIdentifierList([[1, Infinity]]));
+        this.data.splice(lineNumber+1, 0, this.data[lineNumber].splice(pos));
+        this.data[lineNumber].push(endCharacter);
+        this.data[lineNumber+1].unshift(beginCharacter);
     }
 
     /**
