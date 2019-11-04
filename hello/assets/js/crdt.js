@@ -285,9 +285,10 @@ class CRDT {
         pos = pos + 1;
         var retCharacter = this.data[lineNumber][pos];
         var beginCharacter = new Character('', createIdentifierList([[0, -1]]));
-        var endCharacter = new Character('', createIdentifierList([[1, Infinity]]));
+        var endPosition = this.data[lineNumber][pos-1].identifiers[0].position+1; //position one more than of the last element in the line after inserting new line
+        var endCharacter = new Character('', createIdentifierList([[endPosition, Infinity]]));
         
-        //Inserts a new line at lineNumber+1, `splices` out characters after `pos`
+        //Inserts a new line at lineNumber+1, `splices` out characters after `pos` (inclusive)
         //in this.data[lineNumber] to this.data[lineNumber+1] (splice returns the removed part)
         this.data.splice(lineNumber+1, 0, this.data[lineNumber].splice(pos));
         this.data[lineNumber].push(endCharacter);
@@ -306,6 +307,31 @@ class CRDT {
         var tempCharacter = this.data[lineNumber][pos];
         this.data[lineNumber].splice(pos, 1);
         return tempCharacter;
+    
+    }
+
+    /**
+     * Deletes new line at the end of line `lineNumber`.
+     * Merges line `lineNumber+1` at the end of `lineNumber`
+     * @param  {Number} lineNumber
+     */
+    localDeleteNewline(lineNumber) {
+        //Remove the 'terminating' character of line `lineNumber`
+        // console.log(`current line: ${this.data[lineNumber]}`)
+        var endCharacter = this.data[lineNumber].pop();
+        // console.log(`current line: ${this.data[lineNumber]}`)
+        var endIdentifier = endCharacter.identifiers[0];
+        var retCharacter = this.data[lineNumber][-1]; //Return character will be the last character in `lineNumber`
+        var lineToMerge = this.data.splice(lineNumber+1, 1)[0]; //Remove line `lineNumber+1`.
+        lineToMerge.shift(); //Remove 'starting' character from line to be merged
+        // console.log(`lineToMerge: ${lineToMerge}`);
+        //Merge `lineToMerge` to line `lineNumber` by offseting each character in `lineToMerge`
+        for(var character of lineToMerge) {
+            var modifiedCharacter = character;
+            modifiedCharacter.identifiers[0].position += endIdentifier.position;
+            this.data[lineNumber].push(modifiedCharacter);
+        }
+        return retCharacter;
     }
 
     /**
