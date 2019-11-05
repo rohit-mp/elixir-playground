@@ -328,7 +328,10 @@ class CRDT {
         //Merge `lineToMerge` to line `lineNumber` by offseting each character in `lineToMerge`
         for(var character of lineToMerge) {
             var modifiedCharacter = character;
-            modifiedCharacter.identifiers[0].position += endIdentifier.position;
+            for(var ctr = 0; ctr < modifiedCharacter.identifiers.length; ctr++) {
+                modifiedCharacter.identifiers[ctr].position += endIdentifier.position;    
+            }
+            // modifiedCharacter.identifiers[0].position += endIdentifier.position;
             this.data[lineNumber].push(modifiedCharacter);
         }
         return retCharacter;
