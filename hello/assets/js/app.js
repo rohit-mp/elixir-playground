@@ -28,20 +28,25 @@ channel.on('shout', function (payload) {
     if(payload.user_id != my_id) {
         console.log(payload)
         if(payload.type == "input") {
-            crdt.remoteInsert(payload.character, payload.lineNumber)
-            cm.replaceRange(crdt.getUpdatedLine(payload.lineNumber), {line: payload.lineNumber, ch:0}, {line: payload.lineNumber})
+            var modifiedLine = crdt.remoteInsert(payload.character, payload.lineNumber)
+            cm.replaceRange(crdt.getUpdatedLine(modifiedLine), {line: modifiedLine, ch:0}, {line: modifiedLine})
         }
         else if(payload.type == "delete") {
-            crdt.remoteDelete(payload.character, payload.lineNumber)
-            cm.replaceRange(crdt.getUpdatedLine(payload.lineNumber), {line: payload.lineNumber, ch:0}, {line: payload.lineNumber})
+            var modifiedLine = crdt.remoteDelete(payload.character, payload.lineNumber)
+            cm.replaceRange(crdt.getUpdatedLine(modifiedLine), {line: modifiedLine, ch:0}, {line: modifiedLine})
         }
-        else if(payload.type == "newline") {
-            crdt.remoteInsertNewline(payload.character, payload.lineNumber)
+        else if(payload.type == "inputnewline") {
+            var modifiedLine = crdt.remoteInsertNewline(payload.character, payload.lineNumber)
             var line = payload.lineNumber
             //Updates `line` and inserts new line
-            cm.replaceRange([crdt.getUpdatedLine(line), ""], {line: line, ch:0}, {line: line})
+            cm.replaceRange([crdt.getUpdatedLine(modifiedLine), ""], {line: modifiedLine, ch:0}, {line: modifiedLine})
             //Updates `line+1`
-            cm.replaceRange(crdt.getUpdatedLine(line+1), {line: line+1, ch:0}, {line: line+1})
+            cm.replaceRange(crdt.getUpdatedLine(modifiedLine+1), {line: modifiedLine+1, ch:0}, {line: modifiedLine+1})
+        }
+        else if(payload.type == "deletenewline") {
+            console.log(payload.character)
+            var modifiedLine = crdt.remoteDeleteNewline(payload.character, payload.lineNumber)
+            cm.replaceRange(crdt.getUpdatedLine(modifiedLine), {line: modifiedLine, ch:0}, {line: modifiedLine})
         }
         else {
             console.log(payload.type, " not handled yet")
@@ -156,10 +161,10 @@ cm.on("beforeChange", (cm, changeObj) => {
                 }
             }
             if(changeObj.text.length > 1) { //newline
-                var insertCharacter = crdt.localInsertNewline(changeObj.from.line, changeObj.from.ch);
+                var insertCharacter = crdt.localInsertNewline(changeObj.from.line, changeObj.from.ch, my_id);
                 //insertCharacter here should be the [1,infinity] character for that line
                 channel.push("shout", {
-                    type: "newline",
+                    type: "inputnewline",
                     character: insertCharacter,
                     lineNumber: changeObj.from.line
                 })
@@ -192,7 +197,12 @@ cm.on("beforeChange", (cm, changeObj) => {
                 }
                 if(i != changeObj.to.line) {
                     console.log(`deleting newline of ${i}`)
-                    crdt.localDeleteNewline(i); 
+                    var tempCharacter = crdt.localDeleteNewline(i); 
+                    channel.push("shout", {
+                        type: "deletenewline",
+                        character: tempCharacter,
+                        lineNumber: i
+                    })
                 }
             }   
             // var tempCharacter = crdt.localDelete(changeObj.from.line, changeObj.from.ch)

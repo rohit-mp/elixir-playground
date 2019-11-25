@@ -6,6 +6,11 @@ import { create } from "domain";
 //Ignored Enter
 //No undo feture
 
+/* Convention:
+*  - In CRDT, every character on line i is greater than every character on line i-1.
+*/
+
+
 /**
  * API:
  *
@@ -168,6 +173,95 @@ class CRDT {
         // }
     }
 
+    findNextGreaterIdentifierList(prevIdentifierList, nextIdentifierList, siteID) {
+        var maxLen = Math.max(prevIdentifierList.length, nextIdentifierList.length);
+        var newIdentifierList = []
+        
+        //Keep track of siteID before current Identifier
+        var lastPrevSiteID = -1;
+        var lastNextSiteID = Infinity;
+
+        //Keeps track if the identifierList is found
+        var identifierListFound = false;
+        //Keeps track if next greater identifier of prev identifier is being found out
+        var nextGreaterIdentifierFound = false;
+
+        //Iterate over prev and next Identifier and get IdentifierList of `insertCharacter`
+        for(let i = 0; i < maxLen; i++) {
+            //TODO: Check this
+            var prevIdentifier = ((i < prevIdentifierList.length) ? prevIdentifierList[i] : new Identifier(0, lastPrevSiteID));
+            var nextIdentifier = ((i < nextIdentifierList.length) ? nextIdentifierList[i] : new Identifier(0, lastNextSiteID));
+            
+            if(!nextGreaterIdentifierFound) {
+                if(prevIdentifier.position < nextIdentifier.position) {
+                    //Being greedy on size of identifier list
+                    if(siteID > prevIdentifier.siteID && prevIdentifier.siteID != -1) { //TODO: check if ch is same? idempotency?
+                        //If by siteID alone identifier order can be obtained, then push and done!
+                        //Edge case of first character inserted in line handled by 2nd condition
+                        newIdentifierList.push(new Identifier(prevIdentifier.position, siteID));
+                        identifierListFound = true;
+                    }
+                    else if(prevIdentifier.positon + 1 < nextIdentifier.position) {
+                        //If there is atleast a gap of 2 between prevIdentifier and nextIdentifier, take
+                        //prevIdentifier.position+1 and done!
+                        newIdentifierList.push(new Identifier(prevIdentifier.position+1, siteID));
+                        identifierListFound = true;
+                    }
+                    else { //prevIdentifier.position + 1 == nextIdentifier.position
+                        //IdentifierList lesser than nextIndentifierList is found;
+                        //Next find IdentifierList greater than prevIdentifier
+                        newIdentifierList.push(new Identifier(prevIdentifier.position, prevIdentifier.siteID));
+                        nextGreaterIdentifierFound = true;
+                    }
+                }
+                else { //prevIdentifier.position == nextIdentifer.position
+                    //NOTE: prevIdentifier.siteID < nextIdentifier.siteID
+                    if(prevIdentifier.siteID < siteID && siteID < nextIdentifier.siteID) {
+                        //By siteID alone order can be obtained, then push and done!
+                        newIdentifierList.push(new Identifier(prevIdentifier.position, siteID));
+                        identifierListFound = true;
+                    }
+                    else {
+                        //Positions are same and siteIDs don't help in ordering. Have to go ahead
+                        newIdentifierList.push(new Identifier(prevIdentifier.position, prevIdentifier.siteID));
+                    }
+                }
+            }
+            else {
+                //IdentifierList is already less then nextIdentifierList;
+                //This section finds IdentifierList greater than prevIdentifierList
+                if(siteID > prevIdentifier.siteID) {
+                    //By siteId alone order can be obtained, then push and done!
+                    newIdentifierList.push(new Identifier(prevIdentifier.position, siteID));
+                    identifierListFound = true;
+                }
+                else if(prevIdentifier.position < 9) {
+                    //If prevIdentifier.position is not 9, then can always add 1 to position, push and done!
+                    newIdentifierList.push(new Identifier(prevIdentifier.position+1, siteID));
+                    identifierListFound = true;
+                }
+                else { //prevIdentifier.position == 9
+                    //If prevIdentifier.position is 9, then have to go ahead
+                    newIdentifierList.push(new Identifier(prevIdentifier.position, prevIdentifier.siteID));
+                }
+            }
+
+            lastPrevSiteID = prevIdentifier.siteID;
+            lastNextSiteID = nextIdentifier.siteID;
+
+            if(identifierListFound) break;
+        }
+
+        if(!identifierListFound) {
+            newIdentifierList.push(new Identifier(1, siteID));
+            identifierListFound = true;
+        }
+
+        return newIdentifierList;
+    }
+
+
+
     /**
      * Insert `ch` at line `lineNumber` and position `pos` by `siteID`
      * Enters at `pos`, characters after `pos` are shifted ahead
@@ -193,107 +287,124 @@ class CRDT {
         // var nextIdentifierList = ((pos != len) ? this.data[lineNumber][pos].identifiers : createIdentifierList([[1, Infinity]]));
         var nextIdentifierList = this.data[lineNumber][pos].identifiers;
         
-        var maxLen = Math.max(prevIdentifierList.length, nextIdentifierList.length);
-        var insertCharacter = new Character(ch, []);
+        var insertCharacter = new Character(ch, this.findNextGreaterIdentifierList(prevIdentifierList, nextIdentifierList, siteID));
+        // var maxLen = Math.max(prevIdentifierList.length, nextIdentifierList.length);
+        // var insertCharacter = new Character(ch, []);
         
-        //Keep track of siteID before current Identifier
-        var lastPrevSiteID = -1;
-        var lastNextSiteID = Infinity;
+        // //Keep track of siteID before current Identifier
+        // var lastPrevSiteID = -1;
+        // var lastNextSiteID = Infinity;
 
-        //Keeps track if the identifierList is found
-        var identifierListFound = false;
-        //Keeps track if next greater identifier of prev identifier is being found out
-        var findNextGreaterIdentifier = false;
+        // //Keeps track if the identifierList is found
+        // var identifierListFound = false;
+        // //Keeps track if next greater identifier of prev identifier is being found out
+        // var findNextGreaterIdentifier = false;
 
-        //Iterate over prev and next Identifier and get IdentifierList of `insertCharacter`
-        for(let i = 0; i < maxLen; i++) {
-            //TODO: Check this
-            var prevIdentifier = ((i < prevIdentifierList.length) ? prevIdentifierList[i] : new Identifier(0, lastPrevSiteID));
-            var nextIdentifier = ((i < nextIdentifierList.length) ? nextIdentifierList[i] : new Identifier(0, lastNextSiteID));
+        // //Iterate over prev and next Identifier and get IdentifierList of `insertCharacter`
+        // for(let i = 0; i < maxLen; i++) {
+        //     //TODO: Check this
+        //     var prevIdentifier = ((i < prevIdentifierList.length) ? prevIdentifierList[i] : new Identifier(0, lastPrevSiteID));
+        //     var nextIdentifier = ((i < nextIdentifierList.length) ? nextIdentifierList[i] : new Identifier(0, lastNextSiteID));
             
-            if(!findNextGreaterIdentifier) {
-                if(prevIdentifier.position < nextIdentifier.position) {
-                    //Being greedy on size of identifier list
-                    if(siteID > prevIdentifier.siteID && prevIdentifier.siteID != -1) { //TODO: check if ch is same? idempotency?
-                        //If by siteID alone identifier order can be obtained, then push and done!
-                        //Edge case of first character inserted in line handled by 2nd condition
-                        insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, siteID));
-                        identifierListFound = true;
-                    }
-                    else if(prevIdentifier.positon + 1 < nextIdentifier.position) {
-                        //If there is atleast a gap of 2 between prevIdentifier and nextIdentifier, take
-                        //prevIdentifier.position+1 and done!
-                        insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position+1, siteID));
-                        identifierListFound = true;
-                    }
-                    else { //prevIdentifier.position + 1 == nextIdentifier.position
-                        //IdentifierList lesser than nextIndetifierList is found;
-                        //Next find IdentifierList greater than prevIdentifier
-                        insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, prevIdentifier.siteID));
-                        findNextGreaterIdentifier = true;
-                    }
-                }
-                else { //prevIdentifier.position == nextIdentifer.position
-                    //NOTE: prevIdentifier.siteID < nextIdentifier.siteID
-                    if(prevIdentifier.siteID < siteID && siteID < nextIdentifier.siteID) {
-                        //By siteID alone order can be obtained, then push and done!
-                        insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, siteID));
-                        identifierListFound = true;
-                    }
-                    else {
-                        //Positions are same and siteIDs don't help in ordering. Have to go ahead
-                        insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, prevIdentifier.siteID));
-                    }
-                }
-            }
-            else {
-                //IdentifierList is already less then nextIdentifierList;
-                //This section finds IdentifierList greater than prevIdentifierList
-                if(siteID > prevIdentifier.siteID) {
-                    //By siteId alone order can be obtained, then push and done!
-                    insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, siteID));
-                    identifierListFound = true;
-                }
-                else if(prevIdentifier.position < 9) {
-                    //If prevIdentifier.position is not 9, then can always add 1 to position, push and done!
-                    insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position+1, siteID));
-                    identifierListFound = true;
-                }
-                else { //prevIdentifier.position == 9
-                    //If prevIdentifier.position is 9, then have to go ahead
-                    insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, prevIdentifier.siteID));
-                }
-            }
+        //     if(!findNextGreaterIdentifier) {
+        //         if(prevIdentifier.position < nextIdentifier.position) {
+        //             //Being greedy on size of identifier list
+        //             if(siteID > prevIdentifier.siteID && prevIdentifier.siteID != -1) { //TODO: check if ch is same? idempotency?
+        //                 //If by siteID alone identifier order can be obtained, then push and done!
+        //                 //Edge case of first character inserted in line handled by 2nd condition
+        //                 insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, siteID));
+        //                 identifierListFound = true;
+        //             }
+        //             else if(prevIdentifier.positon + 1 < nextIdentifier.position) {
+        //                 //If there is atleast a gap of 2 between prevIdentifier and nextIdentifier, take
+        //                 //prevIdentifier.position+1 and done!
+        //                 insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position+1, siteID));
+        //                 identifierListFound = true;
+        //             }
+        //             else { //prevIdentifier.position + 1 == nextIdentifier.position
+        //                 //IdentifierList lesser than nextIndentifierList is found;
+        //                 //Next find IdentifierList greater than prevIdentifier
+        //                 insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, prevIdentifier.siteID));
+        //                 findNextGreaterIdentifier = true;
+        //             }
+        //         }
+        //         else { //prevIdentifier.position == nextIdentifer.position
+        //             //NOTE: prevIdentifier.siteID < nextIdentifier.siteID
+        //             if(prevIdentifier.siteID < siteID && siteID < nextIdentifier.siteID) {
+        //                 //By siteID alone order can be obtained, then push and done!
+        //                 insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, siteID));
+        //                 identifierListFound = true;
+        //             }
+        //             else {
+        //                 //Positions are same and siteIDs don't help in ordering. Have to go ahead
+        //                 insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, prevIdentifier.siteID));
+        //             }
+        //         }
+        //     }
+        //     else {
+        //         //IdentifierList is already less then nextIdentifierList;
+        //         //This section finds IdentifierList greater than prevIdentifierList
+        //         if(siteID > prevIdentifier.siteID) {
+        //             //By siteId alone order can be obtained, then push and done!
+        //             insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, siteID));
+        //             identifierListFound = true;
+        //         }
+        //         else if(prevIdentifier.position < 9) {
+        //             //If prevIdentifier.position is not 9, then can always add 1 to position, push and done!
+        //             insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position+1, siteID));
+        //             identifierListFound = true;
+        //         }
+        //         else { //prevIdentifier.position == 9
+        //             //If prevIdentifier.position is 9, then have to go ahead
+        //             insertCharacter.pushIdentifier(new Identifier(prevIdentifier.position, prevIdentifier.siteID));
+        //         }
+        //     }
 
-            lastPrevSiteID = prevIdentifier.siteID;
-            lastNextSiteID = nextIdentifier.siteID;
+        //     lastPrevSiteID = prevIdentifier.siteID;
+        //     lastNextSiteID = nextIdentifier.siteID;
 
-            if(identifierListFound) break;
-        }
+        //     if(identifierListFound) break;
+        // }
 
-        if(!identifierListFound) {
-            insertCharacter.pushIdentifier(new Identifier(1, siteID));
-            identifierListFound = true;
-        }
+        // if(!identifierListFound) {
+        //     insertCharacter.pushIdentifier(new Identifier(1, siteID));
+        //     identifierListFound = true;
+        // }
 
         //insert new Character to CRDT and return it
         this.data[lineNumber].splice(pos, 0, insertCharacter);
         return insertCharacter;
     }
 
-    localInsertNewline(lineNumber, pos) {
+    localInsertNewline(lineNumber, pos, siteID) {
         pos = pos + 1;
-        var retCharacter = this.data[lineNumber][pos];
-        var beginCharacter = new Character('', createIdentifierList([[0, -1]]));
-        var endPosition = this.data[lineNumber][pos-1].identifiers[0].position+1; //position one more than of the last element in the line after inserting new line
-        var endCharacter = new Character('', createIdentifierList([[endPosition, Infinity]]));
+
+        // var retCharacter = this.data[lineNumber][pos-1];
+
+        var prevIdentifierList = this.data[lineNumber][pos-1].identifiers;
+        var nextIndentifierList = this.data[lineNumber][pos].identifiers;
+        var beginIdentifierList = this.findNextGreaterIdentifierList(prevIdentifierList, nextIndentifierList, siteID);
+        var endIdentifierList = parseIdentifiers(beginIdentifierList);
+        endIdentifierList[endIdentifierList.length-1].siteID = -1;
+        beginIdentifierList[beginIdentifierList.length-1].siteID = Infinity;
+        var beginCharacter = new Character('', beginIdentifierList);
+        var endCharacter = new Character('', endIdentifierList);
+
+
+        // // var beginCharacter = new Character('', createIdentifierList([[0, -1]]));
+        // var beginIdentifierList = this.data[lineNumber][pos-1].identifiers;
+        // beginIdentifierList[beginIdentifierList.length-1].siteID = Infinity;
+        // var beginCharacter = new Character('', beginIdentifierList);
+        // var endIdentifierList = this.data[lineNumber][pos-1]
+        // var endPosition = this.data[lineNumber][pos-1].identifiers[0].position+1; //position one more than of the last element in the line after inserting new line
+        // var endCharacter = new Character('', createIdentifierList([[endPosition, Infinity]]));
         
         //Inserts a new line at lineNumber+1, `splices` out characters after `pos` (inclusive)
         //in this.data[lineNumber] to this.data[lineNumber+1] (splice returns the removed part)
         this.data.splice(lineNumber+1, 0, this.data[lineNumber].splice(pos));
         this.data[lineNumber].push(endCharacter);
         this.data[lineNumber+1].unshift(beginCharacter);
-        return retCharacter;
+        return beginCharacter;
     }
 
     /**
@@ -321,17 +432,22 @@ class CRDT {
         var endCharacter = this.data[lineNumber].pop();
         // console.log(`current line: ${this.data[lineNumber]}`)
         var endIdentifier = endCharacter.identifiers[0];
+        var retCharacter1 = this.data[lineNumber][this.data[lineNumber].length-1]
+        console.log(lineNumber, retCharacter1)
         var retCharacter = this.data[lineNumber][-1]; //Return character will be the last character in `lineNumber`
+        console.log(lineNumber, retCharacter);
+        console.log(this.data[lineNumber])
         var lineToMerge = this.data.splice(lineNumber+1, 1)[0]; //Remove line `lineNumber+1`.
         lineToMerge.shift(); //Remove 'starting' character from line to be merged
         // console.log(`lineToMerge: ${lineToMerge}`);
         //Merge `lineToMerge` to line `lineNumber` by offseting each character in `lineToMerge`
-        for(var character of lineToMerge) {
+        for(var character of lineToMerge) { //TODO: Replace by splice/slice
             var modifiedCharacter = character;
-            modifiedCharacter.identifiers[0].position += endIdentifier.position;
+            // modifiedCharacter.identifiers[0].position += endIdentifier.position;
             this.data[lineNumber].push(modifiedCharacter);
         }
-        return retCharacter;
+        console.log(retCharacter);
+        return retCharacter1;
     }
 
     /**
@@ -343,47 +459,138 @@ class CRDT {
      */
     remoteInsert(character, lineNumber) { //Binary search insertion [pointless since splice will be O(n)]
         var cchar = new Character(character.ch, parseIdentifiers(character.identifiers));
-        var characters = this.data[lineNumber];
-        var pos;
-        for(pos = 0; pos < characters.length; pos++) {
-            var c = characters[pos];
-            if(!cchar.isGreaterThan(c)) break;
-            // if(character.isGreaterThan(c)) continue; //character == c doesn't make sense since it's like duplicate simultaneous insertion by the same user
+        
+        var lineNumber1;
+        for(lineNumber1 = 0; lineNumber1 < this.data.length; lineNumber1++) {
+            var lineLength = this.data[lineNumber1].length;
+            if(this.data[lineNumber1][lineLength-1].isGreaterThan(cchar)) {
+                var characters = this.data[lineNumber1];
+                var pos;
+                for(pos = 0; pos < lineLength; pos++) {
+                    var c = characters[pos];    
+                    if(!cchar.isGreaterThan(c)) break;
+                }
+                this.data[lineNumber1].splice(pos, 0, cchar);
+                break;
+            }
         }
-        this.data[lineNumber].splice(pos, 0, cchar);
+        return lineNumber1;
+        // var characters = this.data[lineNumber];
+        // var pos;
+        // for(pos = 0; pos < characters.length; pos++) {
+        //     var c = characters[pos];
+        //     if(!cchar.isGreaterThan(c)) break;
+        //     // if(character.isGreaterThan(c)) continue; //character == c doesn't make sense since it's like duplicate simultaneous insertion by the same user
+        // }
+        // this.data[lineNumber].splice(pos, 0, cchar);
     }
     
     remoteInsertNewline(character, lineNumber) {
         var cchar = new Character(character.ch, parseIdentifiers(character.identifiers));
-        var characters = this.data[lineNumber];
-        var pos;
-        for(pos=0; pos<characters.length; pos++) {
-            var c = characters[pos];
-            if(!cchar.isGreaterThan(c)) break;
+        var lineNumber1;
+        for(lineNumber1 = 0; lineNumber1< this.data.length; lineNumber1++) {
+            var lineLength = this.data[lineNumber1].length;
+            if(this.data[lineNumber1][lineLength-1].isGreaterThan(cchar)) {
+
+                var characters = this.data[lineNumber1];
+                var pos;
+                for(pos=0; pos<characters.length; pos++) {
+                    var c = characters[pos];
+                    if(!cchar.isGreaterThan(c)) break;
+                }
+                // var beginCharacter = new Character('', createIdentifierList([[0, -1]]));
+                // var endCharacter = new Character('', createIdentifierList([[1, Infinity]]));
+                // var prevIdentifierList = this.data[lineNumber1][pos-1];
+                // var nextIdentifierList = this.data[lineNumber1][pos];
+                // console.log(prevIdentifierList, nextIdentifierList)
+                // var beginIdentifierList = this.findNextGreaterIdentifierList(prevIdentifierList, nextIdentifierList, cchar.identifiers[cchar.identifiers.length-1].siteID);
+                // var endIdentifierList = parseIdentifiers(beginIdentifierList);
+                // console.log(beginIdentifierList)
+                // endIdentifierList[endIdentifierList.length-1].siteID = -1;
+                // beginIdentifierList[beginIdentifierList.length-1].siteID = Infinity;
+                // var beginCharacter = new Character('', beginIdentifierList);
+                // var endCharacter = new Character('', endIdentifierList);
+                // console.log(beginCharacter);
+                // console.log(endCharacter);
+                // this.data.splice(lineNumber1+1, 0, this.data[lineNumber1].splice(pos));
+                // this.data[lineNumber1].push(endCharacter);
+                // this.data[lineNumber1+1].unshift(beginCharacter);
+                var beginCharacter = new Character('', parseIdentifiers(character.identifiers));
+                var endCharacter = new Character('', parseIdentifiers(character.identifiers));
+                beginCharacter.identifiers[beginCharacter.identifiers.length-1].siteID = Infinity;
+                endCharacter.identifiers[endCharacter.identifiers.length-1].siteID = -1;
+                
+                //Inserts a new line at lineNumber1+1, `splices` out characters after `pos` (inclusive)
+                //in this.data[lineNumber1] to this.data[lineNumber1+1] (splice returns the removed part)
+                this.data.splice(lineNumber1+1, 0, this.data[lineNumber1].splice(pos));
+                this.data[lineNumber1].push(endCharacter);
+                this.data[lineNumber1+1].unshift(beginCharacter);
+
+                break;
+            }
         }
-        var beginCharacter = new Character('', createIdentifierList([[0, -1]]));
-        var endCharacter = new Character('', createIdentifierList([[1, Infinity]]));
-        this.data.splice(lineNumber+1, 0, this.data[lineNumber].splice(pos));
-        this.data[lineNumber].push(endCharacter);
-        this.data[lineNumber+1].unshift(beginCharacter);
+        return lineNumber1;
     }
 
     /**
      * Deletions directly to CRDT
-     * Returns editor compliat line
+     * Returns editor compliant line
      * @param  {Character} character
      * @param  {Number}    lineNumber
      * @result {string}
      */
     remoteDelete(character, lineNumber) {
         var cchar = new Character(character.ch, parseIdentifiers(character.identifiers))
-        for(let pos = 0; pos < this.data[lineNumber].length; pos++) {
-            var c = this.data[lineNumber][pos];
-            // if(c.isEqualTo(character)) {
-            if(c.isEqualTo(cchar)) {
-                this.data[lineNumber].splice(pos, 1);
-            } 
+        var lineNumber1;
+        for(lineNumber1 = 0; lineNumber1<this.data.length; lineNumber1++) {
+            var lineLength = this.data[lineNumber1].length;
+            if(this.data[lineNumber1][lineLength-1].isGreaterThan(cchar)) {
+                for(let pos = 0; pos < this.data[lineNumber1].length; pos++) {
+                    var c = this.data[lineNumber1][pos];
+                    // if(c.isEqualTo(character)) {
+                    if(c.isEqualTo(cchar)) {
+                        this.data[lineNumber1].splice(pos, 1);
+                    } 
+                }
+                break;
+            }
         }
+        return lineNumber1;
+        // for(let pos = 0; pos < this.data[lineNumber].length; pos++) {
+        //     var c = this.data[lineNumber][pos];
+        //     // if(c.isEqualTo(character)) {
+        //     if(c.isEqualTo(cchar)) {
+        //         this.data[lineNumber].splice(pos, 1);
+        //     } 
+        // }
+    }
+
+    /**
+     * Newline deletions directly to CRDT
+     * Returns editor compliant line
+     * @param  {Character} character
+     * @result {string}
+     */
+    remoteDeleteNewline(character, lineNumber) {
+        var cchar = new Character(character.ch, parseIdentifiers(character.identifiers))
+        var lineNumber1;
+        for(lineNumber1 = 0; lineNumber1<this.data.length; lineNumber1++) {
+            var lineLength = this.data[lineNumber1].length;
+            if(this.data[lineNumber1][lineLength-1].isGreaterThan(cchar)) {
+                this.data[lineNumber1].pop();
+                var lineToMerge = this.data.splice(lineNumber1+1, 1)[0]; //Remove line `lineNumber+1`.
+                lineToMerge.shift(); //Remove 'starting' character from line to be merged
+                // console.log(`lineToMerge: ${lineToMerge}`);
+                //Merge `lineToMerge` to line `lineNumber` by offseting each character in `lineToMerge`
+                for(var character of lineToMerge) { //TODO: Replace by splice/slice
+                    var modifiedCharacter = character;
+                    // modifiedCharacter.identifiers[0].position += endIdentifier.position;
+                    this.data[lineNumber1].push(modifiedCharacter);
+                }
+                break;
+            }
+        }
+        return lineNumber1;
     }
 
     
@@ -393,6 +600,8 @@ class CRDT {
      */
     getUpdatedLine(lineNumber) {
         var characters = this.data[lineNumber];
+        console.log(this.data);
+        console.log(lineNumber, characters);
         var lineString = ""; 
         for(let c of characters) {
             lineString += c.ch;
