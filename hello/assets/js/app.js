@@ -46,7 +46,8 @@ channel.on('shout', function (payload) {
         else if(payload.type == "deletenewline") {
             console.log(payload.character)
             var modifiedLine = crdt.remoteDeleteNewline(payload.character, payload.lineNumber)
-            cm.replaceRange(crdt.getUpdatedLine(modifiedLine), {line: modifiedLine, ch:0}, {line: modifiedLine})
+            cm.replaceRange(crdt.getUpdatedLine(modifiedLine), {line: modifiedLine, ch:0}, {line: modifiedLine+1})
+            // cm.replaceRange("", {line: modifiedLine+1, ch:0}, {line: modifiedLine+2})
         }
         else {
             console.log(payload.type, " not handled yet")
