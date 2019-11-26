@@ -433,10 +433,10 @@ class CRDT {
         // console.log(`current line: ${this.data[lineNumber]}`)
         var endIdentifier = endCharacter.identifiers[0];
         var retCharacter1 = this.data[lineNumber][this.data[lineNumber].length-1]
-        console.log(lineNumber, retCharacter1)
+        // console.log(lineNumber, retCharacter1)
         var retCharacter = this.data[lineNumber][-1]; //Return character will be the last character in `lineNumber`
-        console.log(lineNumber, retCharacter);
-        console.log(this.data[lineNumber])
+        // console.log(lineNumber, retCharacter);
+        // console.log(this.data[lineNumber])
         var lineToMerge = this.data.splice(lineNumber+1, 1)[0]; //Remove line `lineNumber+1`.
         lineToMerge.shift(); //Remove 'starting' character from line to be merged
         // console.log(`lineToMerge: ${lineToMerge}`);
@@ -446,7 +446,7 @@ class CRDT {
             // modifiedCharacter.identifiers[0].position += endIdentifier.position;
             this.data[lineNumber].push(modifiedCharacter);
         }
-        console.log(retCharacter);
+        // console.log(retCharacter);
         return retCharacter1;
     }
 
@@ -600,8 +600,6 @@ class CRDT {
      */
     getUpdatedLine(lineNumber) {
         var characters = this.data[lineNumber];
-        console.log(this.data);
-        console.log(lineNumber, characters);
         var lineString = ""; 
         for(let c of characters) {
             lineString += c.ch;

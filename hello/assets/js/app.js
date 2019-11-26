@@ -147,14 +147,26 @@ cm.on("beforeChange", (cm, changeObj) => {
     // console.log("before changing");
     if(changeObj.origin != undefined){
         // changeObj.cancel();
-        // console.log(changeObj)
+        console.log(changeObj)
         if(changeObj.origin == "+input") {
             if(changeObj.from.line != changeObj.to.line || changeObj.from.ch != changeObj.to.ch) { //select and insert
-                for(var i=changeObj.from.line; i<=changeObj.to.line; i++) {
-                    for(var j=changeObj.from.ch; j<changeObj.to.ch; j++) {
+                for(var i=changeObj.to.line; i>=changeObj.from.line; i--) {
+                    var begin = ((i==changeObj.from.line) ? (changeObj.from.ch) : 0)
+                    var end = ((i==changeObj.to.line) ? (changeObj.to.ch) : (crdt.data[i].length-2))
+                    for(var j = end-1; j >= begin; j--) {
                         var tempCharacter = crdt.localDelete(i, j)
+                        console.log('deleted', i, j, tempCharacter)
                         channel.push("shout", {
                             type: "delete",
+                            character: tempCharacter,
+                            lineNumber: i
+                        })
+                    }
+                    if(i != changeObj.to.line) {
+                        console.log(`deleting newline of ${i}`)
+                        var tempCharacter = crdt.localDeleteNewline(i); 
+                        channel.push("shout", {
+                            type: "deletenewline",
                             character: tempCharacter,
                             lineNumber: i
                         })
@@ -189,7 +201,7 @@ cm.on("beforeChange", (cm, changeObj) => {
                     console.log('deleting at', i, j)
                     // console.log(crdt.toString())
                     var tempCharacter = crdt.localDelete(i, j)
-                    // console.log('deleted', tempCharacter)
+                    console.log('deleted', i, j, tempCharacter)
                     channel.push("shout", {
                         type: "delete",
                         character: tempCharacter,
