@@ -3,7 +3,6 @@ defmodule HelloWeb.RoomChannel do
 
   def join("room:lobby", payload, socket) do
     if authorized?(payload) do
-      IO.inspect socket
       {:ok, socket}
     else
       {:error, %{reason: "unauthorized"}}
@@ -18,6 +17,20 @@ defmodule HelloWeb.RoomChannel do
 
   def handle_in("get_my_id", payload, socket) do
     payload = Map.put(payload, "user_id", socket.assigns.user_id)
+    {:reply, {:ok, payload}, socket}
+  end
+
+  def handle_in("compile", payload, socket) do
+    IO.inspect(payload["code"])
+    IO.inspect(System.cmd("/bin/sh", ["-c", " echo '" <> payload["code"] <> "' > " <> " temp.c "]))
+    IO.inspect("copied")
+    IO.inspect(System.cmd("cc", ["temp.c", "-o", "temp"]))
+    IO.inspect("compiled")
+    {output, status} = System.cmd("/home/rohit/cloned/elixir-playground/hello/temp", [])
+    IO.inspect(output)
+    IO.inspect("executed")
+    payload = Map.put(payload, "output", output)
+    IO.inspect(payload)
     {:reply, {:ok, payload}, socket}
   end
 

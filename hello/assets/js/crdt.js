@@ -624,6 +624,17 @@ class CRDT {
         }
         return output;
     }
+
+    getCode() {
+        var output = "";
+        for(let i = 0; i < this.data.length; i++) {
+            for(let j = 0; j < this.data[i].length; j++) {
+                output += this.data[i][j].ch;
+            }
+            output += "\n";
+        }
+        return output;
+    }
 }
 
 // var testCharacter = new Character('a', createIdentifierList([[1,1], [5,2]]));
