@@ -82,7 +82,12 @@ function createIdentifierList(list = []) {
 function parseIdentifiers(list = []) {
     var identifierList = []
     for(let l of list) {
-        identifierList.push(new Identifier(l.position, l.siteID))
+        var temp;
+        if(l.siteID == null)
+            temp = Infinity;
+        else
+            temp = l.siteID;
+        identifierList.push(new Identifier(l.position, temp))
     }
     return identifierList;
 }
