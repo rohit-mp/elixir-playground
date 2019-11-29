@@ -54,6 +54,21 @@ defmodule HelloWeb.RoomChannel do
     {:noreply, socket}
   end
 
+  def handle_in("check", payload, socket) do
+    payload = Map.put(payload, "user_id", socket.assigns.user_id)
+    broadcast socket, "check", payload
+    {:noreply, socket}
+  end
+
+  def handle_in("return_check", payload, socket) do
+    payload = Map.put(payload, "user_id", socket.assigns.user_id)
+    # if payload["to"] == socket.assigns.user_id do
+    #   push(socket, "return_check", payload)
+    # end
+    broadcast socket, "return_check", payload
+    {:noreply, socket}
+  end
+
   # Add authorization logic here as required.
   defp authorized?(_payload) do
     true

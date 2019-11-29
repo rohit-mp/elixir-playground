@@ -269,3 +269,27 @@ compile_btn.onclick = function(){
         "ok", (result) => alert(result["output"])
     )
 }
+
+var check_btn = document.getElementById("check_btn");
+check_btn.onclick = function() {
+    channel.push("check", {
+        value: crdt.toString()
+    })
+    console.log('pushed editor value for checking')
+}
+
+channel.on("return_check", (payload) => {
+    if(my_id == payload.to)
+        console.log(`user: ${payload.user_id}; flag: ${payload.flag}`)
+});
+
+channel.on("check", (payload) => {
+    if(payload.user_id != my_id) {
+        console.log(`check requested by ${payload.user_id}`)
+        var flag = (crdt.toString() == payload.value);
+        channel.push("return_check", {
+            to: payload.user_id,
+            flag: flag
+        })
+    }
+});
