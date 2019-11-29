@@ -255,20 +255,20 @@ cm.on("cursorActivity", (cm) => {
 
 
 var compile_btn = document.getElementById("compile_btn");
-compile_btn.onclick = function(){
-    console.log("compile");
-    var code = crdt.getCode();
-    var code = 'int main(){printf("Hello world"); return 0;}'
-    var compilation_result = "<result>";
-    console.log(code)
-    channel.push("compile", {
-        code: code
-    }).receive(
-        // "ok", (result) => compilation_result = result["output"]
-        // "ok", (result) => console.log(result["output"])
-        "ok", (result) => alert(result["output"])
-    )
-}
+// compile_btn.onclick = function(){
+//     console.log("compile");
+//     var code = crdt.getCode();
+//     var code = 'int main(){printf("Hello world"); return 0;}'
+//     var compilation_result = "<result>";
+//     console.log(code)
+//     channel.push("compile", {
+//         code: code
+//     }).receive(
+//         // "ok", (result) => compilation_result = result["output"]
+//         // "ok", (result) => console.log(result["output"])
+//         "ok", (result) => alert(result["output"])
+//     )
+// }
 
 var check_btn = document.getElementById("check_btn");
 check_btn.onclick = function() {
