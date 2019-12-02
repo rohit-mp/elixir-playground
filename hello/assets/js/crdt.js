@@ -452,7 +452,7 @@ class CRDT {
             this.data[lineNumber].push(modifiedCharacter);
         }
         // console.log(retCharacter);
-        return retCharacter1;
+        return endCharacter;
     }
 
     /**
@@ -581,7 +581,7 @@ class CRDT {
         var lineNumber1;
         for(lineNumber1 = 0; lineNumber1<this.data.length; lineNumber1++) {
             var lineLength = this.data[lineNumber1].length;
-            if(this.data[lineNumber1][lineLength-1].isGreaterThan(cchar)) {
+            if(this.data[lineNumber1][lineLength-1].isEqualTo(cchar)) {
                 this.data[lineNumber1].pop();
                 var lineToMerge = this.data.splice(lineNumber1+1, 1)[0]; //Remove line `lineNumber+1`.
                 lineToMerge.shift(); //Remove 'starting' character from line to be merged
@@ -592,6 +592,9 @@ class CRDT {
                     // modifiedCharacter.identifiers[0].position += endIdentifier.position;
                     this.data[lineNumber1].push(modifiedCharacter);
                 }
+                break;
+            }
+            else if(this.data[lineNumber1][lineLength-1].isGreaterThan(cchar)) {
                 break;
             }
         }
