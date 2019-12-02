@@ -388,10 +388,10 @@ class CRDT {
 
         var prevIdentifierList = this.data[lineNumber][pos-1].identifiers;
         var nextIndentifierList = this.data[lineNumber][pos].identifiers;
-        var beginIdentifierList = this.findNextGreaterIdentifierList(prevIdentifierList, nextIndentifierList, siteID);
+        var beginIdentifierList = this.findNextGreaterIdentifierList(prevIdentifierList, nextIndentifierList, -1);
         var endIdentifierList = parseIdentifiers(beginIdentifierList);
-        endIdentifierList[endIdentifierList.length-1].siteID = -1;
-        beginIdentifierList[beginIdentifierList.length-1].siteID = Infinity;
+        // endIdentifierList[endIdentifierList.length-1].siteID = -1;
+        // beginIdentifierList[beginIdentifierList.length-1].siteID = Infinity;
         var beginCharacter = new Character('', beginIdentifierList);
         var endCharacter = new Character('', endIdentifierList);
 
@@ -522,8 +522,8 @@ class CRDT {
                 // this.data[lineNumber1+1].unshift(beginCharacter);
                 var beginCharacter = new Character('', parseIdentifiers(character.identifiers));
                 var endCharacter = new Character('', parseIdentifiers(character.identifiers));
-                beginCharacter.identifiers[beginCharacter.identifiers.length-1].siteID = Infinity;
-                endCharacter.identifiers[endCharacter.identifiers.length-1].siteID = -1;
+                // beginCharacter.identifiers[beginCharacter.identifiers.length-1].siteID = Infinity;
+                // endCharacter.identifiers[endCharacter.identifiers.length-1].siteID = -1;
                 
                 //Inserts a new line at lineNumber1+1, `splices` out characters after `pos` (inclusive)
                 //in this.data[lineNumber1] to this.data[lineNumber1+1] (splice returns the removed part)
